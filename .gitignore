@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# eval harness — keep summaries (history.jsonl) but not full per-run dumps
+evals/results/*.json
+
 # typescript
 *.tsbuildinfo
 

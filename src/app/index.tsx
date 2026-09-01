@@ -1,98 +1,155 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+/**
+ * Today — the core surface. A time-aware greeting and a live, personalized
+ * quote (tuned to the user's pain points + preferred voice). The "connect"
+ * loop lives here: save it, share it, or ask for another.
+ */
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { PaperCard } from '@/components/paper-card';
+import { SquishyButton } from '@/components/squishy-button';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { greeting, timeOfDay, type Quote } from '@/constants/quotable';
+import { BottomTabInset, BrandFonts, Spacing, type BrandPalette } from '@/constants/theme';
+import { useBrand } from '@/hooks/use-brand';
+import { generateQuote } from '@/lib/anthropic';
+import * as haptics from '@/lib/haptics';
+import * as sound from '@/lib/sound';
+import { useAppState } from '@/providers/app-state';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
+export default function TodayScreen() {
+  const { onboarded, painPoints, tone, toggleFavorite, isSaved } = useAppState();
+  const c = useBrand();
+  const s = styles(c);
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  async function refresh(announce: boolean) {
+    setLoading(true);
+    const next = await generateQuote({
+      painPoints,
+      tone: tone ?? 'warm',
+      timeOfDay: timeOfDay(),
+    });
+    setQuote(next);
+    setLoading(false);
+    if (announce) {
+      haptics.soft();
+      sound.chime();
+    }
   }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
+
+  // Fetch once onboarded (avoids a wasted fetch behind the onboarding overlay,
+  // and never gets stuck if older stored prefs lack a tone).
+  useEffect(() => {
+    if (!onboarded) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refresh(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onboarded]);
+
+  function handleSave() {
+    if (!quote) return;
+    haptics.success();
+    toggleFavorite(quote);
   }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+
+  async function handleShare() {
+    if (!quote) return;
+    const authorLine = quote.author ? ` — ${quote.author}` : '';
+    await Share.share({ message: `${quote.text}${authorLine}\n\nvia Quotable` });
+  }
+
+  const saved = quote ? isSaved(quote) : false;
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <View style={s.screen}>
+      <SafeAreaView style={s.safe}>
+        <View style={s.header}>
+          <ThemedText style={s.greeting}>{greeting()}</ThemedText>
+        </View>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+        <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+          {loading || !quote ? (
+            <View style={s.loading}>
+              <ActivityIndicator color={c.accent} />
+              <ThemedText style={s.loadingText}>finding your words</ThemedText>
+            </View>
+          ) : (
+            <PaperCard quote={quote} />
+          )}
+        </ScrollView>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+        <View style={s.actions}>
+          <SquishyButton
+            label={saved ? 'saved' : 'save'}
+            variant={saved ? 'ghost' : 'primary'}
+            onPress={handleSave}
+            disabled={!quote}
+            style={s.action}
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
+          <SquishyButton
+            label="share"
+            variant="ghost"
+            onPress={handleShare}
+            disabled={!quote}
+            style={s.action}
           />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+          <SquishyButton
+            label="another"
+            variant="ghost"
+            onPress={() => void refresh(true)}
+            disabled={loading}
+            style={s.action}
+          />
+        </View>
       </SafeAreaView>
-    </ThemedView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
+const styles = (c: BrandPalette) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    safe: {
+      flex: 1,
+      paddingHorizontal: Spacing.four,
+    },
+    header: {
+      alignItems: 'center',
+      paddingTop: Spacing.five,
+    },
+    greeting: {
+      fontFamily: BrandFonts.sans,
+      fontSize: 14,
+      letterSpacing: 0.6,
+      color: c.textDim,
+    },
+    body: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      paddingVertical: Spacing.five,
+    },
+    loading: {
+      alignItems: 'center',
+      gap: Spacing.three,
+    },
+    loadingText: {
+      fontFamily: BrandFonts.sans,
+      fontSize: 14,
+      color: c.textDim,
+      letterSpacing: 0.3,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: Spacing.two,
+      paddingBottom: BottomTabInset + Spacing.three,
+    },
+    action: {
+      flex: 1,
+    },
+  });

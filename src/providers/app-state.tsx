@@ -1,0 +1,349 @@
+/**
+ * App-wide state shared across every surface. Loaded from AsyncStorage once on
+ * mount, then written through on each change.
+ *
+ * - Onboarding prefs: pain points + voice (tone) + notify time.
+ * - Account: a local mock sign-up/log-in created during onboarding — see
+ *   `signUp`/`logIn` below. There's no backend, so this is one on-device
+ *   account record, not a real authenticated session.
+ * - Favorites: quotes kept from Today / Explore (the "saved" collection).
+ * - Liked: quotes hearted on the Feed / Explore.
+ * - Following: creator ids the user follows on the Feed.
+ * - Wallpapers: recipes composed in Studio.
+ * - Profile: username, avatar, and the bio quote (the user's favourite line).
+ */
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
+
+import type { MoodId } from '@/constants/library';
+import { MOOD_TO_TONE } from '@/constants/library';
+import type {
+  Account,
+  NotifyTime,
+  PainPoint,
+  Profile,
+  Quote,
+  Tone,
+  Wallpaper,
+} from '@/constants/quotable';
+import { scheduleDailyQuote } from '@/lib/notifications';
+import {
+  clearOnboarding,
+  loadAccount,
+  loadFavorites,
+  loadFollowing,
+  loadLiked,
+  loadPrefs,
+  loadProfile,
+  loadWallpapers,
+  saveAccount,
+  saveFavorites,
+  saveFollowing,
+  saveLiked,
+  savePrefs,
+  saveProfile,
+  saveWallpapers,
+  type OnboardingProfile,
+} from '@/lib/storage';
+
+/**
+ * What onboarding v3 collects (see
+ * src/components/onboarding/onboarding-flow.tsx): the moods someone picks on
+ * the personalization screen, and the time they want the daily notification.
+ * Tone is derived from `preferredMoods` via MOOD_TO_TONE. `painPoints` is no
+ * longer collected in onboarding and is always passed as `[]` — the
+ * type/param stays live in quotable.ts/anthropic.ts.
+ */
+type OnboardingResult = {
+  painPoints: PainPoint[];
+  preferredMoods: MoodId[];
+  notifyTime: NotifyTime;
+};
+
+/** Result of a sign-up/log-in attempt on the onboarding account screen. */
+type AuthResult = { ok: true } | { ok: false; error: string };
+
+type AppState = {
+  /** True until storage has been read — gate splash on this. */
+  loading: boolean;
+  onboarded: boolean;
+  painPoints: PainPoint[];
+  tone: Tone | null;
+  notifyTime: NotifyTime | null;
+  /** Onboarding v3's personalization answer. */
+  onboardingProfile: OnboardingProfile;
+
+  /** The local mock account, once one exists on this device. */
+  account: Account | null;
+
+  favorites: Quote[];
+  liked: Quote[];
+  following: string[];
+  wallpapers: Wallpaper[];
+  profile: Profile;
+
+  completeOnboarding: (result: OnboardingResult) => Promise<void>;
+  /** Dev-only: wipes onboarding state so the flow shows again immediately. */
+  resetOnboarding: () => Promise<void>;
+
+  /**
+   * Local mock auth for the onboarding account screen — no backend, so this
+   * creates/checks one on-device account record. `signUp` fails if an
+   * account already exists (use `logIn` instead); `logIn` fails if no
+   * account exists yet or the email/password don't match. Both set
+   * `profile.username` to the account name on success.
+   */
+  signUp: (name: string, email: string, password: string) => Promise<AuthResult>;
+  logIn: (email: string, password: string) => Promise<AuthResult>;
+
+  toggleFavorite: (quote: Quote) => void;
+  isSaved: (quote: Quote) => boolean;
+
+  toggleLike: (quote: Quote) => void;
+  isLiked: (quote: Quote) => boolean;
+
+  toggleFollow: (creatorId: string) => void;
+  isFollowing: (creatorId: string) => boolean;
+
+  addWallpaper: (wallpaper: Wallpaper) => void;
+  removeWallpaper: (id: string) => void;
+
+  updateProfile: (patch: Partial<Profile>) => void;
+};
+
+/**
+ * NOT real security. There's no backend to check a password against, so this
+ * is a deliberately simple, deterministic local-only transform — enough to
+ * demo a sign-up/log-in flow's UX, never to protect anything real.
+ */
+function mockHash(password: string): string {
+  let hash = 0;
+  for (let i = 0; i < password.length; i++) {
+    hash = (hash * 31 + password.charCodeAt(i)) | 0;
+  }
+  return `mock_${hash}`;
+}
+
+const AppStateContext = createContext<AppState | null>(null);
+
+/** Two quotes are "the same" if their text matches (ids are per-surfacing). */
+function sameQuote(a: Quote, b: Quote): boolean {
+  return a.text.trim() === b.text.trim();
+}
+
+export function AppStateProvider({ children }: { children: ReactNode }) {
+  const [loading, setLoading] = useState(true);
+  const [onboarded, setOnboarded] = useState(false);
+  const [painPoints, setPainPoints] = useState<PainPoint[]>([]);
+  const [tone, setTone] = useState<Tone | null>(null);
+  const [notifyTime, setNotifyTime] = useState<NotifyTime | null>(null);
+  const [onboardingProfile, setOnboardingProfile] = useState<OnboardingProfile>({
+    preferredMoods: [],
+  });
+  const [account, setAccount] = useState<Account | null>(null);
+
+  const [favorites, setFavorites] = useState<Quote[]>([]);
+  const [liked, setLiked] = useState<Quote[]>([]);
+  const [following, setFollowing] = useState<string[]>([]);
+  const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
+  const [profile, setProfile] = useState<Profile>({
+    username: 'you',
+    avatarUri: null,
+    bioQuote: null,
+  });
+
+  useEffect(() => {
+    (async () => {
+      const [prefs, favs, likes, follows, walls, prof, acct] = await Promise.all([
+        loadPrefs(),
+        loadFavorites(),
+        loadLiked(),
+        loadFollowing(),
+        loadWallpapers(),
+        loadProfile(),
+        loadAccount(),
+      ]);
+      setOnboarded(prefs.onboarded);
+      setPainPoints(prefs.painPoints);
+      setTone(prefs.tone);
+      setNotifyTime(prefs.notifyTime);
+      setOnboardingProfile(prefs.onboardingProfile);
+      setFavorites(favs);
+      setLiked(likes);
+      setFollowing(follows);
+      setWallpapers(walls);
+      setProfile(prof);
+      setAccount(acct);
+      setLoading(false);
+    })();
+  }, []);
+
+  async function completeOnboarding(result: OnboardingResult): Promise<void> {
+    const tone = result.preferredMoods.length
+      ? MOOD_TO_TONE[result.preferredMoods[0]]
+      : 'warm';
+    const profile: OnboardingProfile = { preferredMoods: result.preferredMoods };
+    setPainPoints(result.painPoints);
+    setTone(tone);
+    setNotifyTime(result.notifyTime);
+    setOnboardingProfile(profile);
+    setOnboarded(true);
+    await savePrefs({
+      painPoints: result.painPoints,
+      tone,
+      notifyTime: result.notifyTime,
+      onboardingProfile: profile,
+    });
+    await scheduleDailyQuote(result.notifyTime);
+  }
+
+  async function resetOnboarding(): Promise<void> {
+    await clearOnboarding();
+    setOnboarded(false);
+    setPainPoints([]);
+    setTone(null);
+    setNotifyTime(null);
+    setOnboardingProfile({ preferredMoods: [] });
+  }
+
+  async function signUp(name: string, email: string, password: string): Promise<AuthResult> {
+    const cleanEmail = email.trim().toLowerCase();
+    if (account) {
+      return { ok: false, error: 'you already have an account on this device — log in instead' };
+    }
+    const next: Account = { name: name.trim(), email: cleanEmail, passwordHash: mockHash(password) };
+    setAccount(next);
+    await saveAccount(next);
+    updateProfile({ username: next.name });
+    return { ok: true };
+  }
+
+  async function logIn(email: string, password: string): Promise<AuthResult> {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!account) {
+      return { ok: false, error: 'no account found on this device — sign up first' };
+    }
+    if (account.email !== cleanEmail) {
+      return { ok: false, error: 'no account found for that email' };
+    }
+    if (account.passwordHash !== mockHash(password)) {
+      return { ok: false, error: 'that password doesn’t look right' };
+    }
+    updateProfile({ username: account.name });
+    return { ok: true };
+  }
+
+  function toggleFavorite(quote: Quote): void {
+    setFavorites((current) => {
+      const exists = current.some((qq) => sameQuote(qq, quote));
+      const next = exists
+        ? current.filter((qq) => !sameQuote(qq, quote))
+        : [quote, ...current];
+      void saveFavorites(next);
+      return next;
+    });
+  }
+
+  function isSaved(quote: Quote): boolean {
+    return favorites.some((qq) => sameQuote(qq, quote));
+  }
+
+  function toggleLike(quote: Quote): void {
+    setLiked((current) => {
+      const exists = current.some((qq) => sameQuote(qq, quote));
+      const next = exists
+        ? current.filter((qq) => !sameQuote(qq, quote))
+        : [quote, ...current];
+      void saveLiked(next);
+      return next;
+    });
+  }
+
+  function isLiked(quote: Quote): boolean {
+    return liked.some((qq) => sameQuote(qq, quote));
+  }
+
+  function toggleFollow(creatorId: string): void {
+    setFollowing((current) => {
+      const next = current.includes(creatorId)
+        ? current.filter((id) => id !== creatorId)
+        : [...current, creatorId];
+      void saveFollowing(next);
+      return next;
+    });
+  }
+
+  function isFollowing(creatorId: string): boolean {
+    return following.includes(creatorId);
+  }
+
+  function addWallpaper(wallpaper: Wallpaper): void {
+    setWallpapers((current) => {
+      const next = [wallpaper, ...current];
+      void saveWallpapers(next);
+      return next;
+    });
+  }
+
+  function removeWallpaper(id: string): void {
+    setWallpapers((current) => {
+      const next = current.filter((w) => w.id !== id);
+      void saveWallpapers(next);
+      return next;
+    });
+  }
+
+  function updateProfile(patch: Partial<Profile>): void {
+    setProfile((current) => {
+      const next = { ...current, ...patch };
+      void saveProfile(next);
+      return next;
+    });
+  }
+
+  return (
+    <AppStateContext.Provider
+      value={{
+        loading,
+        onboarded,
+        painPoints,
+        tone,
+        notifyTime,
+        onboardingProfile,
+        account,
+        favorites,
+        liked,
+        following,
+        wallpapers,
+        profile,
+        completeOnboarding,
+        resetOnboarding,
+        signUp,
+        logIn,
+        toggleFavorite,
+        isSaved,
+        toggleLike,
+        isLiked,
+        toggleFollow,
+        isFollowing,
+        addWallpaper,
+        removeWallpaper,
+        updateProfile,
+      }}>
+      {children}
+    </AppStateContext.Provider>
+  );
+}
+
+export function useAppState(): AppState {
+  const ctx = useContext(AppStateContext);
+  if (!ctx) {
+    throw new Error('useAppState must be used within an AppStateProvider');
+  }
+  return ctx;
+}

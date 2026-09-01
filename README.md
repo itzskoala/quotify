@@ -1,56 +1,62 @@
-# Welcome to your Expo app 👋
+# Quotable
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Give someone the quote they need to hear right now — a live, AI-generated line
+matched to what's on their mind and the time of day.
 
-## Get started
+## The MVP, mapped to the design framework
 
-1. Install dependencies
+- **Core function** — a live quote (Claude Haiku 4.5) tuned to the user's pain points, preferred voice, and time of day.
+- **Core loop** — receive a quote → connect → **save** / share it.
+- **Surface check** — three surfaces: Onboarding → Today → Saved.
+- **Retention hook** — a daily push notification at the user's chosen time.
+- **Texture** — warm paper + ink with a **terracotta** signature accent (Instrument Serif + Inter, hand-drawn line doodles); fully themed light (warm paper) / dark (ink) via `useBrand()`, plus haptics and ASMR sound hooks.
 
+## Onboarding is a conversation, not a quiz
+
+Three quiet questions: *what's weighing on you?* (multi-select, or none) → a scenario
+question that infers the **voice** you respond to (gentle / direct / reflective / warm)
+without asking outright → *when do you want a nudge?* Pain points + voice feed the quote prompt.
+
+## Setup
+
+1. Install deps: `npm install`
+2. Add your Anthropic key so quotes generate live:
    ```bash
-   npm install
+   cp .env.example .env.local
+   # edit .env.local and set EXPO_PUBLIC_ANTHROPIC_API_KEY
    ```
+   Without a key the app still runs — the Today screen falls back to a bundled
+   set of quotes so nothing is ever empty.
+3. Run it:
+   - `npm run ios` — iOS simulator (needs full Xcode; this is a dev build, not
+     Expo Go, because Quotable uses native modules: notifications, audio, native tabs).
+   - `npm run web` — quick preview in a browser (native-only bits — haptics,
+     sound, notifications — no-op on web).
 
-2. Start the app
+## Where things live
 
-   ```bash
-   npx expo start
-   ```
+- `src/lib/anthropic.ts` — live quote generation (Messages API over `fetch`) + local fallback.
+- `src/lib/{notifications,haptics,sound,storage}.ts` — the retention + texture + persistence libs.
+- `src/providers/app-state.tsx` — shared prefs + favorites.
+- `src/components/onboarding/` — the 3-step onboarding.
+- `src/app/index.tsx` (Today) · `src/app/explore.tsx` (Saved) — the two tabs.
+- `src/constants/quotable.ts` — needs, notify presets, shared types.
 
-In the output, you'll find options to open the app in a
+## Sounds
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+`assets/sounds/chime.wav` and `squish.wav` ship as **silent placeholders** so
+the app is runnable today. Drop real ASMR audio in at those paths (keep the
+filenames) and the chime/squish come alive with no code change.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Security note
 
-## Get a fresh project
+For this personal MVP the Anthropic key ships in the client bundle via
+`EXPO_PUBLIC_ANTHROPIC_API_KEY`. That's fine for a personal build but **not** for
+public release. Before shipping, put quote generation behind a thin proxy and
+point `API_URL` in `src/lib/anthropic.ts` at it — nothing else needs to change.
 
-When you're ready, run:
+## Deferred (phase 2)
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Send-to-friend beyond the native share sheet, wallpaper maker, "story behind the
+person," calendar (gcal/ical) integration, custom notify times, and stage-of-life
+personalization. The data model leaves room for these (e.g. `Quote.hasStory`).
