@@ -1,63 +1,67 @@
 /**
- * Onboarding v3 opening — the core-value screen. Headline + subtext are
- * written as a benefit ("what this does for you"), not a feature list — the
- * app teaches one line a day, not a feature tour. Not a numbered step (no
- * progress dots): a calm beat before personalization/paywall/account/notify.
+ * Onboarding v4 opening — the splash. Not built on OnboardingScaffold (every
+ * other step is): the header sits top-middle rather than under a shared
+ * content column, and there's no back control (nothing to go back to). Only
+ * a skip "×" top-right. Matches "01 — Splash" in the Wireframes for
+ * Quotable Figma page.
  */
-import { StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Illustration } from '@/components/onboarding/illustrations';
 import { OnboardingPill } from '@/components/onboarding/onboarding-pill';
-import { ThemedText } from '@/components/themed-text';
-import { BrandFonts, OnboardingColors, Spacing } from '@/constants/theme';
+import { SkipBackRow } from '@/components/onboarding/skip-back-row';
+import { BrandFonts, MaxContentWidth, OnboardingColors, Spacing } from '@/constants/theme';
 
-export function Welcome({ onNext }: { onNext: () => void }) {
+export function Welcome({ onNext, onSkip }: { onNext: () => void; onSkip: () => void }) {
   return (
-    <View style={styles.screen}>
+    <LinearGradient
+      colors={OnboardingColors.gradientStops}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      locations={[0, 0.55, 1]}
+      style={styles.screen}>
       <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
-          <Illustration name="welcome" size={160} />
-          <ThemedText style={styles.headline}>Daily Wisdom for Your Mind.</ThemedText>
-          <ThemedText style={styles.sub}>
-            One line, once a day — enough to change how the next hour feels.
-            No feed to keep up with, no streaks to protect. Just the words
-            you need, when you need them.
-          </ThemedText>
+        <SkipBackRow onSkip={onSkip} />
+
+        <View style={styles.hero}>
+          <Text style={styles.headline}>quotable!</Text>
+          <Text style={styles.sub}>your pocket cheerleader</Text>
         </View>
 
         <View style={styles.footer}>
-          <OnboardingPill label="begin" onPress={onNext} />
+          <OnboardingPill label="be quotable" onPress={onNext} />
         </View>
       </SafeAreaView>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: OnboardingColors.bg },
-  safe: { flex: 1, paddingHorizontal: Spacing.five },
-  center: {
+  screen: { flex: 1 },
+  safe: {
     flex: 1,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.five,
+  },
+  hero: {
+    marginTop: Spacing.six,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
   },
   headline: {
-    fontFamily: BrandFonts.urbanistBold,
+    fontFamily: BrandFonts.googleSansBold,
     color: OnboardingColors.ink,
-    fontSize: 30,
-    lineHeight: 37,
+    fontSize: 40,
     textAlign: 'center',
   },
   sub: {
-    fontFamily: BrandFonts.urbanist,
+    fontFamily: BrandFonts.sans,
     color: OnboardingColors.inkDim,
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 17,
     textAlign: 'center',
-    paddingHorizontal: Spacing.two,
-    marginTop: Spacing.two,
+    marginTop: Spacing.three,
   },
   footer: {
     paddingBottom: Spacing.four,

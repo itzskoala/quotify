@@ -99,10 +99,18 @@ export const BrandFonts = {
   /** Clean neutral sans (Inter) — micro UI labels + numerals. */
   sans: 'Inter_400Regular',
   sansMedium: 'Inter_500Medium',
-  /** Urbanist — onboarding-only headline face. See OnboardingColors above for why it's scoped there. */
+  /** Urbanist — legacy onboarding-v3 headline face, kept only for reference. */
   urbanist: 'Urbanist_400Regular',
   urbanistSemiBold: 'Urbanist_600SemiBold',
   urbanistBold: 'Urbanist_700Bold',
+  /**
+   * Google Sans Flex — onboarding-v4 headline face (see OnboardingColors
+   * below). Google open-sourced the variable "Google Sans Flex" onto Google
+   * Fonts; plain "Google Sans" is still not publicly distributed.
+   */
+  googleSansMedium: 'GoogleSansFlex_500Medium',
+  googleSansSemiBold: 'GoogleSansFlex_600SemiBold',
+  googleSansBold: 'GoogleSansFlex_700Bold',
 } as const;
 
 export const Fonts = Platform.select({
@@ -131,48 +139,42 @@ export const Fonts = Platform.select({
 });
 
 /**
- * Onboarding-only palette. Deliberately separate from `Palette` above:
- * the rest of the app stays strict black-and-white (see the comment on
- * `Palette`) while onboarding — a mental-health app's first impression —
- * gets a warm, bright, illustrated welcome instead. Retheming the rest of
- * the app to match is an explicit future task, not implied by this export.
+ * Onboarding-only palette. Deliberately separate from `Palette` above (see
+ * the comment on `Palette`) so the rest of the app is untouched.
  *
- * Kept to a cream/white base rather than full-bleed saturated color per
- * screen, so body text stays legible and the UI reads as "minimalist with
- * soft typography" — the color lives in illustrations, pill buttons, and
- * progress dots, one accent per question (see ONBOARDING_ACCENTS below).
+ * v4 (2026-09, monochrome experiment): replaces the v3 warm-cream/coral
+ * palette below with a calm, muted charcoal-to-faded-grey — this is a
+ * mental-health/quotes app, so onboarding should read as calming, not
+ * stimulating. Explicitly scoped as an *experiment for onboarding only* —
+ * it does not retheme the rest of the app, and the warm palette this
+ * replaced is no longer the assumed eventual app-wide direction (that plan
+ * is retired, not just paused). `gradientStops` feeds `expo-linear-gradient`
+ * directly and is the one background treatment used across every screen —
+ * a flat single tone reads static/lifeless at this size, the soft diagonal
+ * blend is what makes it feel alive without introducing color.
  */
 export type OnboardingPalette = {
+  /** Solid fallback (web canvas capture, etc.) — mid-point of gradientStops. */
   bg: string;
+  gradientStops: readonly [string, string, string];
+  /** Translucent white — chip/row fills over the gradient. */
   card: string;
+  /** Translucent white — chip/row borders over the gradient. */
+  line: string;
   ink: string;
   inkDim: string;
-  line: string;
-  coral: string;
-  sunflower: string;
-  sage: string;
-  lavender: string;
+  inkFaint: string;
 };
 
 export const OnboardingColors: OnboardingPalette = {
-  bg: '#FFF8F0', // warm cream
-  card: '#FFFFFF',
-  ink: '#3A2E2A', // warm dark brown — softer than pure black
-  inkDim: '#8B7E78',
-  line: '#F0E4D8',
-  coral: '#FF8B6A',
-  sunflower: '#FFC857',
-  sage: '#8FAE8B',
-  lavender: '#B7A6E0',
+  bg: '#252528',
+  gradientStops: ['#131315', '#252528', '#4D4D4F'],
+  card: 'rgba(255,255,255,0.06)',
+  line: 'rgba(255,255,255,0.22)',
+  ink: '#FFFFFF',
+  inkDim: '#C0C0C2',
+  inkFaint: '#8A8A8D',
 };
-
-/** One accent color per onboarding question, rotating through the palette. */
-export const ONBOARDING_ACCENTS = [
-  OnboardingColors.coral,
-  OnboardingColors.sunflower,
-  OnboardingColors.sage,
-  OnboardingColors.lavender,
-] as const;
 
 export const Spacing = {
   half: 2,

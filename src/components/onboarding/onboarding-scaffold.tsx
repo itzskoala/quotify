@@ -1,61 +1,51 @@
 /**
- * Shared frame for every onboarding v2 step: warm cream ground, an
- * illustration tied to the step's accent color, an Urbanist headline
- * (+ optional subtitle), a content area, and a pinned footer. Replaces
- * step-scaffold.tsx — only ever imported from within this directory, so
- * fully rewriting it is safe (confirmed via grep before this change).
+ * Shared frame for every onboarding v4 step (splash excluded — it has its
+ * own layout, see welcome.tsx): the charcoal-to-faded-grey gradient ground,
+ * the back/skip row, a Google Sans Flex headline (+ optional Inter
+ * subtitle), a content area, and a pinned footer. Rewritten from scratch for
+ * the v4 monochrome redesign — see the comment on OnboardingColors in
+ * src/constants/theme.ts.
  */
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { Illustration, type IllustrationName } from '@/components/onboarding/illustrations';
+import { SkipBackRow } from '@/components/onboarding/skip-back-row';
 import { ThemedText } from '@/components/themed-text';
-import { BrandFonts, OnboardingColors, Spacing } from '@/constants/theme';
+import { BrandFonts, MaxContentWidth, OnboardingColors, Spacing } from '@/constants/theme';
 
 type Props = {
-  stepIndex: number;
-  stepCount: number;
+  onBack?: () => void;
+  onSkip: () => void;
   title: string;
   subtitle?: string;
-  illustration?: IllustrationName;
-  /** Ties this step's progress dot + illustration accent together. */
-  accent: string;
   children?: ReactNode;
   footer?: ReactNode;
+  /** 'top' for content-heavy screens (lists, grids); 'center' for a single hero beat. */
+  contentAlign?: 'top' | 'center';
 };
 
 export function OnboardingScaffold({
-  stepIndex,
-  stepCount,
+  onBack,
+  onSkip,
   title,
   subtitle,
-  illustration,
-  accent,
   children,
   footer,
+  contentAlign = 'top',
 }: Props) {
   return (
-    <View style={styles.screen}>
+    <LinearGradient
+      colors={OnboardingColors.gradientStops}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      locations={[0, 0.55, 1]}
+      style={styles.screen}>
       <SafeAreaView style={styles.safe}>
-        <View style={styles.dots}>
-          {Array.from({ length: stepCount }).map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                i === stepIndex && [styles.dotActive, { backgroundColor: accent }],
-              ]}
-            />
-          ))}
-        </View>
+        <SkipBackRow onBack={onBack} onSkip={onSkip} />
 
-        <View style={styles.body}>
-          {illustration ? (
-            <View style={styles.illustration}>
-              <Illustration name={illustration} accent={accent} size={140} />
-            </View>
-          ) : null}
+        <View style={[styles.body, contentAlign === 'center' && styles.bodyCenter]}>
           <ThemedText style={styles.title}>{title}</ThemedText>
           {subtitle ? <ThemedText style={styles.subtitle}>{subtitle}</ThemedText> : null}
           {children ? <View style={styles.content}>{children}</View> : null}
@@ -63,60 +53,47 @@ export function OnboardingScaffold({
 
         {footer ? <View style={styles.footer}>{footer}</View> : null}
       </SafeAreaView>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: OnboardingColors.bg,
   },
   safe: {
     flex: 1,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
     paddingHorizontal: Spacing.four,
-  },
-  dots: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    justifyContent: 'center',
-    paddingTop: Spacing.four,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: OnboardingColors.line,
-  },
-  dotActive: {
-    width: 18,
   },
   body: {
     flex: 1,
-    justifyContent: 'center',
-    gap: Spacing.three,
+    paddingTop: Spacing.five,
   },
-  illustration: {
-    alignItems: 'center',
-    marginBottom: Spacing.two,
+  bodyCenter: {
+    justifyContent: 'center',
   },
   title: {
-    fontFamily: BrandFonts.urbanistBold,
+    fontFamily: BrandFonts.googleSansSemiBold,
     color: OnboardingColors.ink,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 33,
     textAlign: 'center',
   },
   subtitle: {
-    fontFamily: BrandFonts.urbanist,
+    fontFamily: BrandFonts.sans,
     color: OnboardingColors.inkDim,
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 21,
     textAlign: 'center',
     paddingHorizontal: Spacing.two,
+    marginTop: Spacing.three,
   },
   content: {
-    marginTop: Spacing.two,
+    marginTop: Spacing.four,
+    alignItems: 'center',
   },
   footer: {
     paddingBottom: Spacing.four,

@@ -31,7 +31,7 @@ import type {
   Tone,
   Wallpaper,
 } from '@/constants/quotable';
-import { scheduleDailyQuote } from '@/lib/notifications';
+import { requestNotificationPermission, scheduleDailyQuote } from '@/lib/notifications';
 import {
   clearOnboarding,
   loadAccount,
@@ -52,17 +52,22 @@ import {
 } from '@/lib/storage';
 
 /**
- * What onboarding v3 collects (see
- * src/components/onboarding/onboarding-flow.tsx): the moods someone picks on
- * the personalization screen, and the time they want the daily notification.
- * Tone is derived from `preferredMoods` via MOOD_TO_TONE. `painPoints` is no
- * longer collected in onboarding and is always passed as `[]` — the
- * type/param stays live in quotable.ts/anthropic.ts.
+ * What onboarding v4 collects (see
+ * src/components/onboarding/onboarding-flow.tsx): the moods derived from the
+ * Interests step, the religious practice + age answers (v4-only, optional),
+ * and the notify time. Tone is derived from `preferredMoods` via
+ * MOOD_TO_TONE. `painPoints` is no longer collected in onboarding and is
+ * always passed as `[]` — the type/param stays live in
+ * quotable.ts/anthropic.ts. v4 has no dedicated notify-time picker screen
+ * (cut along with the paywall/account steps, per the v4 redesign — see
+ * onboarding-flow.tsx); `notifyTime` defaults to a sensible daily time.
  */
 type OnboardingResult = {
   painPoints: PainPoint[];
   preferredMoods: MoodId[];
   notifyTime: NotifyTime;
+  religiousPractice?: string;
+  age?: number;
 };
 
 /** Result of a sign-up/log-in attempt on the onboarding account screen. */
@@ -187,7 +192,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const tone = result.preferredMoods.length
       ? MOOD_TO_TONE[result.preferredMoods[0]]
       : 'warm';
-    const profile: OnboardingProfile = { preferredMoods: result.preferredMoods };
+    const profile: OnboardingProfile = {
+      preferredMoods: result.preferredMoods,
+      religiousPractice: result.religiousPractice,
+      age: result.age,
+    };
     setPainPoints(result.painPoints);
     setTone(tone);
     setNotifyTime(result.notifyTime);
@@ -199,6 +208,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       notifyTime: result.notifyTime,
       onboardingProfile: profile,
     });
+    // Fires the native OS "Allow Notifications?" system dialog — there's no
+    // custom in-app screen for this, iOS/Android own it. Was previously dead
+    // code (requestNotificationPermission existed but nothing called it),
+    // so the daily notification silently never fired. Asked right at
+    // onboarding's end, immediately after the notification-preview screen
+    // sold the feature — best-effort either way, scheduleDailyQuote already
+    // swallows a denial safely.
+    await requestNotificationPermission();
     await scheduleDailyQuote(result.notifyTime);
   }
 
