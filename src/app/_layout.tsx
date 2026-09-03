@@ -1,10 +1,10 @@
+import {
+  GoogleSansFlex_500Medium,
+  GoogleSansFlex_600SemiBold,
+  GoogleSansFlex_700Bold,
+} from '@expo-google-fonts/google-sans-flex';
 import { IndieFlower_400Regular } from '@expo-google-fonts/indie-flower';
 import { Inter_400Regular, Inter_500Medium, useFonts } from '@expo-google-fonts/inter';
-import {
-  Urbanist_400Regular,
-  Urbanist_600SemiBold,
-  Urbanist_700Bold,
-} from '@expo-google-fonts/urbanist';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StyleSheet, View } from 'react-native';
@@ -55,9 +55,9 @@ export default function RootLayout() {
     IndieFlower_400Regular,
     Inter_400Regular,
     Inter_500Medium,
-    Urbanist_400Regular,
-    Urbanist_600SemiBold,
-    Urbanist_700Bold,
+    GoogleSansFlex_500Medium,
+    GoogleSansFlex_600SemiBold,
+    GoogleSansFlex_700Bold,
   });
 
   return (

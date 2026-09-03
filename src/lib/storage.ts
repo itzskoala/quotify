@@ -20,8 +20,8 @@ const KEYS = {
   pain: 'quotable.painPoints',
   tone: 'quotable.tone',
   notifyTime: 'quotable.notifyTime',
-  // Onboarding v3's one personalization answer — see
-  // src/components/onboarding/categories.tsx.
+  // Onboarding's personalization answers — see
+  // src/components/onboarding/onboarding-flow.tsx.
   onboardingProfile: 'quotable.onboardingProfile',
   favorites: 'quotable.favorites',
   liked: 'quotable.liked',
@@ -31,9 +31,13 @@ const KEYS = {
   account: 'quotable.account',
 } as const;
 
-/** Onboarding v3's personalization answer — see src/components/onboarding/. */
+/** Onboarding's personalization answers — see src/components/onboarding/. */
 export type OnboardingProfile = {
   preferredMoods: MoodId[];
+  /** Set only if "Religion" was picked on the Interests step (v4+). */
+  religiousPractice?: string;
+  /** From the v4 age slider; 76 means "75+". */
+  age?: number;
 };
 
 const EMPTY_ONBOARDING_PROFILE: OnboardingProfile = {

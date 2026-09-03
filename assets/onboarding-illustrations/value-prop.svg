@@ -1,0 +1,38 @@
+<svg width="280" height="120" viewBox="0 0 280 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- book -->
+  <path d="M14 58 Q46 40 78 58 L78 100 Q46 84 14 100 Z" stroke="#19191B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M46 48 L46 90" stroke="#19191B" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M22 68 Q34 62 44 68" stroke="#19191B" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M22 80 Q34 74 44 80" stroke="#19191B" stroke-width="1.6" stroke-linecap="round"/>
+
+  <!-- sunflower -->
+  <g>
+    <circle cx="140" cy="34" r="11" stroke="#19191B" stroke-width="2.2"/>
+    <circle cx="140" cy="34" r="2.5" fill="#19191B"/>
+    <ellipse cx="140" cy="15" rx="4" ry="8" stroke="#19191B" stroke-width="2.2" stroke-linecap="round"/>
+    <ellipse cx="153" cy="21" rx="4" ry="8" stroke="#19191B" stroke-width="2.2" stroke-linecap="round" transform="rotate(45, 153, 21)"/>
+    <ellipse cx="159" cy="34" rx="4" ry="8" stroke="#19191B" stroke-width="2.2" stroke-linecap="round" transform="rotate(90, 159, 34)"/>
+    <ellipse cx="153" cy="47" rx="4" ry="8" stroke="#19191B" stroke-width="2.2" stroke-linecap="round" transform="rotate(135, 153, 47)"/>
+    <ellipse cx="140" cy="53" rx="4" ry="8" stroke="#19191B" stroke-width="2.2" stroke-linecap="round"/>
+    <ellipse cx="127" cy="47" rx="4" ry="8" stroke="#19191B" stroke-width="2.2" stroke-linecap="round" transform="rotate(225, 127, 47)"/>
+    <ellipse cx="121" cy="34" rx="4" ry="8" stroke="#19191B" stroke-width="2.2" stroke-linecap="round" transform="rotate(270, 121, 34)"/>
+    <ellipse cx="127" cy="21" rx="4" ry="8" stroke="#19191B" stroke-width="2.2" stroke-linecap="round" transform="rotate(315, 127, 21)"/>
+    <path d="M140 56 Q146 74 140 92" stroke="#19191B" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+
+  <!-- photo frame with two stick figures -->
+  <rect x="192" y="14" width="72" height="66" rx="5" stroke="#19191B" stroke-width="2.2"/>
+  <g stroke="#19191B" stroke-width="2" stroke-linecap="round">
+    <circle cx="214" cy="36" r="5.5"/>
+    <path d="M214 41.5 L214 58"/>
+    <path d="M205 48 L223 48"/>
+    <path d="M214 58 L207 68"/>
+    <path d="M214 58 L221 68"/>
+    <circle cx="240" cy="36" r="5.5"/>
+    <path d="M240 41.5 L240 58"/>
+    <path d="M231 48 L249 48"/>
+    <path d="M240 58 L233 68"/>
+    <path d="M240 58 L247 68"/>
+    <path d="M220 50 L234 50"/>
+  </g>
+</svg>

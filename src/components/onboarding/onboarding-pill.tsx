@@ -1,8 +1,10 @@
 /**
- * Onboarding's colorful pill button — deliberately separate from the shared
+ * Onboarding's pill button — deliberately separate from the shared
  * <SquishyButton> (src/components/squishy-button.tsx), which is also used
- * outside onboarding (Today, Studio) and stays black-and-white. Same squish
- * + haptic + sound interaction, Urbanist type, explicit accent color.
+ * outside onboarding (Today, Studio). Same squish + haptic + sound
+ * interaction. v4: monochrome — solid is a white pill with charcoal text
+ * (the one bright thing on every gradient screen), outline is a translucent
+ * white border for secondary actions.
  */
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
@@ -21,27 +23,18 @@ type Variant = 'solid' | 'outline';
 type Props = {
   label: string;
   onPress: () => void;
-  /** Accent color for the solid fill / outline border. Defaults to coral. */
-  accent?: string;
   variant?: Variant;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-export function OnboardingPill({
-  label,
-  onPress,
-  accent = OnboardingColors.coral,
-  variant = 'solid',
-  disabled,
-  style,
-}: Props) {
+export function OnboardingPill({ label, onPress, variant = 'solid', disabled, style }: Props) {
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   function handlePressIn() {
     // eslint-disable-next-line react-hooks/immutability
-    scale.value = withSpring(0.94, { damping: 14, stiffness: 320 });
+    scale.value = withSpring(0.96, { damping: 14, stiffness: 320 });
     haptics.tap();
     sound.squish();
   }
@@ -60,18 +53,8 @@ export function OnboardingPill({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled}
-        style={[
-          styles.base,
-          isSolid
-            ? { backgroundColor: accent }
-            : { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: accent },
-          disabled && styles.disabled,
-        ]}>
-        <ThemedText
-          style={[
-            styles.label,
-            { color: isSolid ? OnboardingColors.card : OnboardingColors.ink },
-          ]}>
+        style={[styles.base, isSolid ? styles.solid : styles.outline, disabled && styles.disabled]}>
+        <ThemedText style={[styles.label, { color: isSolid ? '#19191B' : OnboardingColors.ink }]}>
           {label}
         </ThemedText>
       </Pressable>
@@ -87,11 +70,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  solid: {
+    backgroundColor: OnboardingColors.ink,
+  },
+  outline: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: OnboardingColors.line,
+  },
   disabled: {
     opacity: 0.4,
   },
   label: {
-    fontFamily: BrandFonts.urbanistSemiBold,
+    fontFamily: BrandFonts.googleSansMedium,
     fontSize: 16,
     letterSpacing: 0.2,
   },
