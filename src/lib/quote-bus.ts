@@ -1,6 +1,6 @@
 /**
- * A one-slot hand-off used to send a quote from Explore / Feed / Profile into
- * the Studio tab. Studio consumes the pending quote when it next renders, then
+ * A one-slot hand-off used to send a quote from Explore / Profile into the
+ * Studio tab. Studio consumes the pending quote when it next renders, then
  * clears it. Kept as a tiny external store (no context wiring across tabs).
  */
 import { useSyncExternalStore } from 'react';

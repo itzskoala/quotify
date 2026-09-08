@@ -4,9 +4,10 @@
  * loop lives here: save it, share it, or ask for another.
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/avatar';
 import { PaperCard } from '@/components/paper-card';
 import { SquishyButton } from '@/components/squishy-button';
 import { ThemedText } from '@/components/themed-text';
@@ -15,11 +16,12 @@ import { BottomTabInset, BrandFonts, Spacing, type BrandPalette } from '@/consta
 import { useBrand } from '@/hooks/use-brand';
 import { generateQuote } from '@/lib/anthropic';
 import * as haptics from '@/lib/haptics';
+import { openProfile } from '@/lib/profile-bus';
 import * as sound from '@/lib/sound';
 import { useAppState } from '@/providers/app-state';
 
 export default function TodayScreen() {
-  const { onboarded, painPoints, tone, toggleFavorite, isSaved } = useAppState();
+  const { onboarded, painPoints, tone, profile, toggleFavorite, isSaved } = useAppState();
   const c = useBrand();
   const s = styles(c);
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -68,6 +70,15 @@ export default function TodayScreen() {
       <SafeAreaView style={s.safe}>
         <View style={s.header}>
           <ThemedText style={s.greeting}>{greeting()}</ThemedText>
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              openProfile();
+            }}
+            hitSlop={10}
+            style={s.avatarButton}>
+            <Avatar name={profile.username} uri={profile.avatarUri} size={34} />
+          </Pressable>
         </View>
 
         <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
@@ -122,6 +133,11 @@ const styles = (c: BrandPalette) =>
     header: {
       alignItems: 'center',
       paddingTop: Spacing.five,
+    },
+    avatarButton: {
+      position: 'absolute',
+      right: 0,
+      top: Spacing.five - 2,
     },
     greeting: {
       fontFamily: BrandFonts.sans,

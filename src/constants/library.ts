@@ -133,6 +133,44 @@ export const LIBRARY: readonly LibraryQuote[] = [
   q('wisdom', 'The only true wisdom is in knowing you know nothing.', 'Socrates'),
   q('wisdom', 'What you seek is seeking you.', 'Rumi', '', true),
   q('wisdom', 'Normality is a paved road: it’s comfortable to walk, but no flowers grow.', 'Vincent van Gogh', '', true),
+
+  // — new for Explore's topic pills (funny/life/friendship/work/music/random
+  // have no natural home in the 7 moods above) — kept on the closest-toned
+  // existing mood for Studio/tone purposes; see constants/topics.ts for the
+  // actual topic tagging —
+  q('movies', 'I told my computer I needed a break, and now it won’t stop sending me vacation ads.', null),
+  q('movies', 'My bed is a magical place where I suddenly remember everything I forgot to do.', null),
+  q('movies', 'I’m not lazy. I’m on energy-saving mode.', null),
+
+  q('wisdom', 'Some days are for building. Some days are just for getting through. Both count.', null),
+  q('wisdom', 'You don’t find your life by planning it — you find it by living the parts you didn’t.', null),
+  q('wisdom', 'Nobody has it figured out. Some people are just better at looking like they do.', null),
+
+  q('romance', 'A good friend remembers the version of you that you forgot you were.', null),
+  q('romance', 'Distance doesn’t end a friendship. Silence does.', null),
+  q('romance', 'The best people are the ones you can sit in silence with and still feel understood.', null),
+
+  q('motivation', 'Do the boring part well and the interesting part gets to happen.', null),
+  q('motivation', 'Your job is not your worth. Do it well anyway.', null),
+  q('motivation', 'A little progress each day adds up to big results.', null),
+
+  q('calm', 'Some feelings only make sense set to a melody.', null),
+  q('calm', 'A good song is a memory you can replay on command.', null),
+  q('calm', 'Turn it up. Let it hold what words can’t.', null),
+
+  q('wisdom', 'Not everything needs a reason. Some things just need room to happen.', null),
+  q('calm', 'Chaos is just order we haven’t recognized yet.', null),
+  q('motivation', 'Pick a weird hobby. It’ll save you one day.', null),
+
+  // — new for Explore's Politics category — strictly civic/non-partisan:
+  // voting, government, public service. No current politicians, parties, or
+  // hot-button issues; real quotes are historical and broadly non-partisan.
+  q('wisdom', 'The ballot is stronger than the bullet.', 'Abraham Lincoln'),
+  q('wisdom', 'Government of the people, by the people, for the people, shall not perish from the earth.', 'Abraham Lincoln'),
+  q('wisdom', 'The vote is the most powerful instrument ever devised by man for breaking down injustice.', 'Lyndon B. Johnson'),
+  q('wisdom', 'Voting is the expression of our commitment to ourselves, one another, this country, and this world.', 'Sharon Salzberg'),
+  q('motivation', 'A nation’s greatness is measured by how it treats its weakest members.', 'Mahatma Gandhi'),
+  q('motivation', 'Show up. Speak up. That’s how democracies stay alive.', null),
 ];
 
 export function quotesForMood(mood: MoodId): LibraryQuote[] {

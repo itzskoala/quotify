@@ -1,5 +1,5 @@
 /**
- * The "story behind the person" reader. Slides up over the Feed when a quote
+ * The "story behind the person" reader. Slides up over Explore when a quote
  * whose author has a Story is tapped: a portrait, their years, a short life,
  * and their other lines in the library.
  */

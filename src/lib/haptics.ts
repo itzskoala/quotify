@@ -24,3 +24,10 @@ export function soft(): void {
   if (Platform.OS === 'web') return;
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {});
 }
+
+/** A firmer thump for a long-press revealing something (e.g. the reaction
+ * picker) — distinct from `tap`'s light single-press feedback. */
+export function medium(): void {
+  if (Platform.OS === 'web') return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+}

@@ -111,6 +111,17 @@ export const BrandFonts = {
   googleSansMedium: 'GoogleSansFlex_500Medium',
   googleSansSemiBold: 'GoogleSansFlex_600SemiBold',
   googleSansBold: 'GoogleSansFlex_700Bold',
+  /**
+   * Valley Sans — Explore-only. Explore's own components (the screen,
+   * TopicGrid, SearchBar, Pill, CategoryTile, PostDetailOverlay's chrome)
+   * use these instead of `hand`/`sans` above; shared components Explore
+   * merely reuses (`PaperCard`, `WallpaperCanvas`, `StoryOverlay`) are left
+   * on the app-wide voice so Home/Studio/Profile don't also change.
+   */
+  valley: 'ValleySans_400Regular',
+  valleyMedium: 'ValleySans_500Medium',
+  valleySemiBold: 'ValleySans_600SemiBold',
+  valleyBold: 'ValleySans_700Bold',
 } as const;
 
 export const Fonts = Platform.select({

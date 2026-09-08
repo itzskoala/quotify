@@ -1,8 +1,12 @@
 /**
- * Me — the profile page. A profile photo, an editable username, and a bio that
- * is the user's single favourite quote, lettered by hand. Below: their kept
- * lines, the ones they liked, the wallpapers they made in Studio, and their
- * saved quotes grouped into collections by mood.
+ * Me — the profile overlay. A profile photo, an editable username, and a bio
+ * that is the user's single favourite quote, lettered by hand. Below: their
+ * kept lines, the ones they liked, the wallpapers they made in Studio, and
+ * their saved quotes grouped into collections by mood.
+ *
+ * Was a tab route (`src/app/profile.tsx`); now opened as a full-screen
+ * overlay (see `lib/profile-bus.ts`) from an avatar button on Home/Explore,
+ * following the same pattern as `StoryOverlay`.
  */
 import * as ImagePicker from 'expo-image-picker';
 import { useMemo, useState } from 'react';
@@ -16,7 +20,7 @@ import { ThemedText } from '@/components/themed-text';
 import { WallpaperCanvas } from '@/components/wallpaper-canvas';
 import { LIBRARY, MOODS, type MoodId } from '@/constants/library';
 import type { Quote } from '@/constants/quotable';
-import { BottomTabInset, BrandFonts, Spacing, type BrandPalette } from '@/constants/theme';
+import { BrandFonts, Spacing, type BrandPalette } from '@/constants/theme';
 import { useBrand } from '@/hooks/use-brand';
 import * as haptics from '@/lib/haptics';
 import { useAppState } from '@/providers/app-state';
@@ -34,7 +38,9 @@ function moodOfText(text: string): MoodId | undefined {
   return LIBRARY.find((q) => q.text.trim() === text.trim())?.mood;
 }
 
-export default function ProfileScreen() {
+type Props = { onClose: () => void };
+
+export function ProfileOverlay({ onClose }: Props) {
   const {
     profile,
     updateProfile,
@@ -79,7 +85,20 @@ export default function ProfileScreen() {
 
   return (
     <View style={s.screen}>
-      <SafeAreaView style={s.safe} edges={['top']}>
+      <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
+        <View style={s.topbar}>
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              onClose();
+            }}
+            hitSlop={12}
+            style={s.close}>
+            <ThemedText style={s.closeLabel}>✕  close</ThemedText>
+          </Pressable>
+          <ThemedText style={s.kicker}>me</ThemedText>
+        </View>
+
         <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
           {/* identity */}
           <View style={s.identity}>
@@ -152,7 +171,7 @@ export default function ProfileScreen() {
           {section === 'liked' ? (
             <QuoteSection
               quotes={liked}
-              emptyText="no likes yet. tap ♡ on the feed or explore."
+              emptyText="no likes yet. tap ♡ on a quote in Explore."
               onRemove={toggleLike}
             />
           ) : null}
@@ -348,14 +367,45 @@ function SmallLink({ c, label, onPress }: { c: BrandPalette; label: string; onPr
 
 const styles = (c: BrandPalette) =>
   StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.bg },
+    screen: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: c.bg,
+    },
     safe: { flex: 1 },
+    topbar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.four,
+      paddingTop: Spacing.two,
+      paddingBottom: Spacing.two,
+    },
+    close: {
+      paddingVertical: Spacing.one,
+    },
+    closeLabel: {
+      fontFamily: BrandFonts.sansMedium,
+      fontSize: 13,
+      color: c.textDim,
+      letterSpacing: 0.3,
+    },
+    kicker: {
+      fontFamily: BrandFonts.sans,
+      fontSize: 12,
+      letterSpacing: 1.4,
+      textTransform: 'uppercase',
+      color: c.textFaint,
+    },
     body: {
-      paddingBottom: BottomTabInset + Spacing.six,
+      paddingBottom: Spacing.six,
     },
     identity: {
       alignItems: 'center',
-      paddingTop: Spacing.five,
+      paddingTop: Spacing.two,
       paddingHorizontal: Spacing.four,
       gap: Spacing.two,
     },

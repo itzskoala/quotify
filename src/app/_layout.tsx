@@ -5,6 +5,12 @@ import {
 } from '@expo-google-fonts/google-sans-flex';
 import { IndieFlower_400Regular } from '@expo-google-fonts/indie-flower';
 import { Inter_400Regular, Inter_500Medium, useFonts } from '@expo-google-fonts/inter';
+import {
+  ValleySans_400Regular,
+  ValleySans_500Medium,
+  ValleySans_600SemiBold,
+  ValleySans_700Bold,
+} from '@expo-google-fonts/valley-sans';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StyleSheet, View } from 'react-native';
@@ -12,8 +18,10 @@ import { StyleSheet, View } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { OnboardingFlow } from '@/components/onboarding/onboarding-flow';
+import { ProfileOverlay } from '@/components/profile-overlay';
 import { useBrand } from '@/hooks/use-brand';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { closeProfile, useProfileOpen } from '@/lib/profile-bus';
 import { AppStateProvider, useAppState } from '@/providers/app-state';
 
 SplashScreen.preventAutoHideAsync();
@@ -25,6 +33,7 @@ SplashScreen.preventAutoHideAsync();
  */
 function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
   const { loading, onboarded } = useAppState();
+  const profileOpen = useProfileOpen();
   const c = useBrand();
 
   // Hold on a themed frame while fonts / stored prefs resolve. The animated
@@ -36,6 +45,11 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
   return (
     <View style={[styles.root, { backgroundColor: c.bg }]}>
       <AppTabs />
+      {profileOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <ProfileOverlay onClose={closeProfile} />
+        </View>
+      )}
       {!onboarded && (
         <View style={StyleSheet.absoluteFill}>
           <OnboardingFlow />
@@ -58,6 +72,10 @@ export default function RootLayout() {
     GoogleSansFlex_500Medium,
     GoogleSansFlex_600SemiBold,
     GoogleSansFlex_700Bold,
+    ValleySans_400Regular,
+    ValleySans_500Medium,
+    ValleySans_600SemiBold,
+    ValleySans_700Bold,
   });
 
   return (

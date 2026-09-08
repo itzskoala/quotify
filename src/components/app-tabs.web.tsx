@@ -6,11 +6,28 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
-import { BrandFonts, MaxContentWidth, Spacing, type BrandPalette } from '@/constants/theme';
+import { ExploreIcon, HomeIcon, WallpaperIcon } from '@/components/tab-icons';
+import { Spacing, type BrandPalette } from '@/constants/theme';
 import { useBrand } from '@/hooks/use-brand';
 
+// react-native-web passes unknown style keys straight through to the DOM
+// element's style — `backdropFilter` isn't in RN's `ViewStyle` type, but
+// this is the web-only glass approximation for the tab bar (see the
+// component doc comment).
+const webGlass = {
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+} as unknown as ViewStyle;
+
+/**
+ * Web has no native tab bar, so no automatic iOS 26 Liquid Glass either (see
+ * app-tabs.tsx). This approximates the look with a translucent pill +
+ * `backdropFilter: blur()` — the closest honest equivalent on a platform
+ * `expo-glass-effect`/native glass doesn't support. Icon-only, matching
+ * app-tabs.tsx (no `Trigger.Label` there either) and the reference photo.
+ */
 export default function AppTabs() {
   return (
     <Tabs>
@@ -18,19 +35,13 @@ export default function AppTabs() {
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton>today</TabButton>
-          </TabTrigger>
-          <TabTrigger name="feed" href="/feed" asChild>
-            <TabButton>feed</TabButton>
+            <TabButton Icon={HomeIcon} />
           </TabTrigger>
           <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>explore</TabButton>
+            <TabButton Icon={ExploreIcon} />
           </TabTrigger>
           <TabTrigger name="studio" href="/studio" asChild>
-            <TabButton>studio</TabButton>
-          </TabTrigger>
-          <TabTrigger name="profile" href="/profile" asChild>
-            <TabButton>me</TabButton>
+            <TabButton Icon={WallpaperIcon} />
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -45,21 +56,22 @@ function CustomTabList(props: TabListProps) {
   const s = styles(c);
   return (
     <View {...props} style={s.container}>
-      <View style={s.inner}>
-        <Text style={s.brand}>quotable</Text>
-        <View style={s.tabs}>{props.children}</View>
-      </View>
+      <View style={s.inner}>{props.children}</View>
     </View>
   );
 }
 
-function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+function TabButton({
+  isFocused,
+  Icon,
+  ...props
+}: TabTriggerSlotProps & { Icon: (p: { color: string; size?: number }) => React.ReactNode }) {
   const c = useBrand();
   const s = styles(c);
   return (
     <Pressable {...props} style={({ pressed }) => [pressed && s.pressed]}>
       <View style={[s.tabButton, isFocused && s.tabButtonActive]}>
-        <Text style={[s.tabLabel, isFocused && s.tabLabelActive]}>{children}</Text>
+        <Icon color={isFocused ? c.onAccent : c.textDim} />
       </View>
     </Pressable>
   );
@@ -79,40 +91,26 @@ const styles = (c: BrandPalette) =>
     inner: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      flexGrow: 1,
-      maxWidth: MaxContentWidth,
+      justifyContent: 'space-evenly',
+      width: '100%',
+      maxWidth: 260,
       paddingVertical: Spacing.two,
       paddingHorizontal: Spacing.three,
       borderRadius: 999,
-      backgroundColor: c.raised,
+      backgroundColor: c.bg === '#FFFFFF' ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.62)',
       borderWidth: 1,
       borderColor: c.line,
-    },
-    brand: {
-      fontFamily: BrandFonts.serif,
-      fontSize: 24,
-      color: c.text,
-    },
-    tabs: {
-      flexDirection: 'row',
-      gap: Spacing.one,
+      ...webGlass,
     },
     tabButton: {
-      paddingVertical: Spacing.one,
-      paddingHorizontal: Spacing.two,
+      width: 40,
+      height: 40,
       borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     tabButtonActive: {
       backgroundColor: c.accent,
-    },
-    tabLabel: {
-      fontFamily: BrandFonts.sans,
-      fontSize: 14,
-      color: c.textDim,
-    },
-    tabLabelActive: {
-      color: c.onAccent,
     },
     pressed: {
       opacity: 0.6,

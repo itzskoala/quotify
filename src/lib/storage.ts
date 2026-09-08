@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type {
   Account,
+  Library,
   NotifyTime,
   PainPoint,
   Profile,
@@ -25,6 +26,8 @@ const KEYS = {
   onboardingProfile: 'quotable.onboardingProfile',
   favorites: 'quotable.favorites',
   liked: 'quotable.liked',
+  reactions: 'quotable.reactions',
+  libraries: 'quotable.libraries',
   following: 'quotable.following',
   wallpapers: 'quotable.wallpapers',
   profile: 'quotable.profile',
@@ -176,6 +179,16 @@ async function saveJson(key: string, value: unknown): Promise<void> {
 
 export const loadLiked = () => loadJson<Quote[]>(KEYS.liked, []);
 export const saveLiked = (liked: Quote[]) => saveJson(KEYS.liked, liked);
+
+/** Emoji reactions on a quote — like/love/etc are all the same mechanism,
+ * keyed by quote text (see `sameQuote` in app-state.tsx), value is the set
+ * of emoji the user has reacted with. Layered on top of the plain
+ * like/heart toggle above, not a replacement for it. */
+export const loadReactions = () => loadJson<Record<string, string[]>>(KEYS.reactions, {});
+export const saveReactions = (r: Record<string, string[]>) => saveJson(KEYS.reactions, r);
+
+export const loadLibraries = () => loadJson<Library[]>(KEYS.libraries, []);
+export const saveLibraries = (libs: Library[]) => saveJson(KEYS.libraries, libs);
 
 export const loadFollowing = () => loadJson<string[]>(KEYS.following, []);
 export const saveFollowing = (ids: string[]) => saveJson(KEYS.following, ids);

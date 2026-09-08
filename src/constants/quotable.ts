@@ -138,3 +138,15 @@ export type Profile = {
   /** The quote shown as the bio — the user's single favourite line. */
   bioQuote: Quote | null;
 };
+
+/**
+ * A user-created collection of quotes (Explore's "save to library" picker,
+ * Spotify-playlist-style) — separate from `favorites` above, which stays a
+ * single flat list untouched by this. A quote can sit in any number of
+ * libraries at once.
+ */
+export type Library = {
+  id: string;
+  name: string;
+  quotes: Quote[];
+};

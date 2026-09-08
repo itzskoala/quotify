@@ -3,41 +3,38 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useBrand } from '@/hooks/use-brand';
 
 /**
- * The five native tabs. Explore (the mood board) sits in the middle, as the
- * heart of browsing; Studio (wallpaper maker) and Feed flank it, Today and Me
- * bookend. Trigger `name`s must match route files in `src/app/`.
+ * The three native tabs: Home (Today's live quote), Explore (the Pinterest-
+ * style topic/masonry feed — now also where Feed's "following" lane lives),
+ * and Wallpaper (Studio). Trigger `name`s must match route files in
+ * `src/app/`. Me/profile is no longer a tab — it's an avatar-triggered
+ * overlay (see `profile-bus.ts` / `profile-overlay.tsx`), reached from the
+ * Home and Explore headers.
+ *
+ * Icon-only — no `Trigger.Label`, per the reference the user wants (a plain
+ * icon row, not a labeled tab bar).
+ *
+ * No manual glass-effect code here: on iOS 26+, `NativeTabs` renders with
+ * system Liquid Glass automatically (it derives the tab bar's background
+ * from the content behind it) — `backgroundColor`/`indicatorColor`-style
+ * props only affect iOS 18 and earlier and can't override it. See
+ * `app-tabs.web.tsx` for web's CSS approximation, since there's no native
+ * glass to fall back on there.
  */
 export default function AppTabs() {
   const c = useBrand();
 
   return (
-    <NativeTabs
-      backgroundColor={c.bg}
-      indicatorColor={c.accentSoft}
-      labelStyle={{ selected: { color: c.accent } }}>
+    <NativeTabs backgroundColor={c.bg} indicatorColor={c.accentSoft}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Today</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="sun.max" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="feed">
-        <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="newspaper" />
+        <NativeTabs.Trigger.Icon sf="house" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="square.grid.2x2" />
+        <NativeTabs.Trigger.Icon sf="sparkle.magnifyingglass" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="studio">
-        <NativeTabs.Trigger.Label>Studio</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="wand.and.stars" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Me</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="person.crop.circle" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

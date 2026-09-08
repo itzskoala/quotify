@@ -24,6 +24,7 @@ import type { MoodId } from '@/constants/library';
 import { MOOD_TO_TONE } from '@/constants/library';
 import type {
   Account,
+  Library,
   NotifyTime,
   PainPoint,
   Profile,
@@ -37,16 +38,20 @@ import {
   loadAccount,
   loadFavorites,
   loadFollowing,
+  loadLibraries,
   loadLiked,
   loadPrefs,
   loadProfile,
+  loadReactions,
   loadWallpapers,
   saveAccount,
   saveFavorites,
   saveFollowing,
+  saveLibraries,
   saveLiked,
   savePrefs,
   saveProfile,
+  saveReactions,
   saveWallpapers,
   type OnboardingProfile,
 } from '@/lib/storage';
@@ -109,8 +114,23 @@ type AppState = {
   toggleFavorite: (quote: Quote) => void;
   isSaved: (quote: Quote) => boolean;
 
+  /** User-created "save to library" collections (Explore's Favorite button
+   * opens a picker over these, Spotify-playlist-style) — separate from the
+   * single `favorites` list above, which the picker also surfaces as its
+   * pinned first option. */
+  libraries: Library[];
+  createLibrary: (name: string) => Library;
+  addToLibrary: (libraryId: string, quote: Quote) => void;
+  removeFromLibrary: (libraryId: string, quote: Quote) => void;
+  isInLibrary: (libraryId: string, quote: Quote) => boolean;
+
   toggleLike: (quote: Quote) => void;
   isLiked: (quote: Quote) => boolean;
+
+  /** Emoji reactions (long-press the like heart) — layered on top of the
+   * plain like above, not a replacement. Multiple emoji per quote allowed. */
+  toggleReaction: (quote: Quote, emoji: string) => void;
+  reactionsFor: (quote: Quote) => string[];
 
   toggleFollow: (creatorId: string) => void;
   isFollowing: (creatorId: string) => boolean;
@@ -154,6 +174,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const [favorites, setFavorites] = useState<Quote[]>([]);
   const [liked, setLiked] = useState<Quote[]>([]);
+  const [libraries, setLibraries] = useState<Library[]>([]);
+  const [reactions, setReactions] = useState<Record<string, string[]>>({});
   const [following, setFollowing] = useState<string[]>([]);
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
   const [profile, setProfile] = useState<Profile>({
@@ -164,10 +186,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const [prefs, favs, likes, follows, walls, prof, acct] = await Promise.all([
+      const [prefs, favs, likes, libs, reacts, follows, walls, prof, acct] = await Promise.all([
         loadPrefs(),
         loadFavorites(),
         loadLiked(),
+        loadLibraries(),
+        loadReactions(),
         loadFollowing(),
         loadWallpapers(),
         loadProfile(),
@@ -180,6 +204,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setOnboardingProfile(prefs.onboardingProfile);
       setFavorites(favs);
       setLiked(likes);
+      setLibraries(libs);
+      setReactions(reacts);
       setFollowing(follows);
       setWallpapers(walls);
       setProfile(prof);
@@ -270,6 +296,45 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return favorites.some((qq) => sameQuote(qq, quote));
   }
 
+  function createLibrary(name: string): Library {
+    const clean = name.trim() || 'untitled';
+    const next: Library = { id: `lib-${Date.now()}-${Math.round(Math.random() * 1e6)}`, name: clean, quotes: [] };
+    setLibraries((current) => {
+      const updated = [...current, next];
+      void saveLibraries(updated);
+      return updated;
+    });
+    return next;
+  }
+
+  function addToLibrary(libraryId: string, quote: Quote): void {
+    setLibraries((current) => {
+      const updated = current.map((lib) =>
+        lib.id === libraryId && !lib.quotes.some((qq) => sameQuote(qq, quote))
+          ? { ...lib, quotes: [quote, ...lib.quotes] }
+          : lib,
+      );
+      void saveLibraries(updated);
+      return updated;
+    });
+  }
+
+  function removeFromLibrary(libraryId: string, quote: Quote): void {
+    setLibraries((current) => {
+      const updated = current.map((lib) =>
+        lib.id === libraryId
+          ? { ...lib, quotes: lib.quotes.filter((qq) => !sameQuote(qq, quote)) }
+          : lib,
+      );
+      void saveLibraries(updated);
+      return updated;
+    });
+  }
+
+  function isInLibrary(libraryId: string, quote: Quote): boolean {
+    return libraries.find((lib) => lib.id === libraryId)?.quotes.some((qq) => sameQuote(qq, quote)) ?? false;
+  }
+
   function toggleLike(quote: Quote): void {
     setLiked((current) => {
       const exists = current.some((qq) => sameQuote(qq, quote));
@@ -283,6 +348,32 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   function isLiked(quote: Quote): boolean {
     return liked.some((qq) => sameQuote(qq, quote));
+  }
+
+  /** Keyed by trimmed quote text, matching `sameQuote`'s own notion of "the
+   * same quote" — reactions don't care which surfacing/id it came from. */
+  function reactionKey(quote: Quote): string {
+    return quote.text.trim();
+  }
+
+  function toggleReaction(quote: Quote, emoji: string): void {
+    setReactions((current) => {
+      const key = reactionKey(quote);
+      const existing = current[key] ?? [];
+      const nextForQuote = existing.includes(emoji)
+        ? existing.filter((e) => e !== emoji)
+        : [...existing, emoji];
+      const next =
+        nextForQuote.length > 0
+          ? { ...current, [key]: nextForQuote }
+          : Object.fromEntries(Object.entries(current).filter(([k]) => k !== key));
+      void saveReactions(next);
+      return next;
+    });
+  }
+
+  function reactionsFor(quote: Quote): string[] {
+    return reactions[reactionKey(quote)] ?? [];
   }
 
   function toggleFollow(creatorId: string): void {
@@ -335,6 +426,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         account,
         favorites,
         liked,
+        libraries,
         following,
         wallpapers,
         profile,
@@ -344,8 +436,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         logIn,
         toggleFavorite,
         isSaved,
+        createLibrary,
+        addToLibrary,
+        removeFromLibrary,
+        isInLibrary,
         toggleLike,
         isLiked,
+        toggleReaction,
+        reactionsFor,
         toggleFollow,
         isFollowing,
         addWallpaper,
